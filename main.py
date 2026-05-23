@@ -5,22 +5,13 @@ import json
 import time
 import os
 
-os.makedirs("output", exist_ok=True)
-
 URL = "https://books.toscrape.com/"
 
-headers = {
+HEADERS = {
     "User-Agent": "FernandoCrawlerBot/1.0"
 }
 
-response = requests.get(URL, headers=headers)
-response.encoding = "utf-8"
-
-soup = BeautifulSoup(response.text, "html.parser")
-
-books = []
-
-rating_map = {
+RATING_MAP = {
     "One": 1,
     "Two": 2,
     "Three": 3,
@@ -28,35 +19,74 @@ rating_map = {
     "Five": 5
 }
 
-articles = soup.find_all("article", class_="product_pod")
 
-for article in articles:
+def fetch_page():
+    response = requests.get(URL, headers=HEADERS)
+    response.encoding = "utf-8"
+    return response.text
 
-    title = article.h3.a["title"]
 
-    price = article.find("p", class_="price_color").text
+def parse_books(html):
+    soup = BeautifulSoup(html, "html.parser")
 
-    availability = article.find("p", class_="instock availability").text.strip()
+    books = []
 
-    rating_class = article.find("p", class_="star-rating")["class"][1]
+    articles = soup.find_all("article", class_="product_pod")
 
-    rating = rating_map.get(rating_class, 0)
+    for article in articles:
 
-    books.append({
-        "title": title,
-        "price": price,
-        "availability": availability,
-        "rating": rating
-    })
+        title = article.h3.a["title"]
 
-time.sleep(1)
+        price = article.find("p", class_="price_color").text
 
-# salvar JSON
-with open("output/books.json", "w", encoding="utf-8") as f:
-    json.dump(books, f, indent=4, ensure_ascii=False)
+        availability = article.find(
+            "p",
+            class_="instock availability"
+        ).text.strip()
 
-# salvar CSV
-df = pd.DataFrame(books)
-df.to_csv("output/books.csv", index=False)
+        rating_class = article.find(
+            "p",
+            class_="star-rating"
+        )["class"][1]
 
-print("Scraping finalizado!")
+        rating = RATING_MAP.get(rating_class, 0)
+
+        books.append({
+            "title": title,
+            "price": price,
+            "availability": availability,
+            "rating": rating
+        })
+
+    return books
+
+
+def save_json(data):
+    with open("output/books.json", "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=4, ensure_ascii=False)
+
+
+def save_csv(data):
+    df = pd.DataFrame(data)
+    df.to_csv("output/books.csv", index=False)
+
+
+def main():
+
+    os.makedirs("output", exist_ok=True)
+
+    html = fetch_page()
+
+    books = parse_books(html)
+
+    save_json(books)
+
+    save_csv(books)
+
+    time.sleep(1)
+
+    print("Scraping finalizado!")
+
+
+if __name__ == "__main__":
+    main()
