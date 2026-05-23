@@ -33,3 +33,5 @@ USER crawleruser
 
 # Comando principal
 CMD ["python", "main.py"]
+
+# Não utilizei a instrução EXPOSE pois este é um script de execução batch (job), e não um servidor web escutando portas.
