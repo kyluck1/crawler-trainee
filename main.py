@@ -5,7 +5,7 @@ import json
 import time
 import os
 
-URL = "https://books.toscrape.com/"
+BASE_URL = "https://books.toscrape.com/"
 
 HEADERS = {
     "User-Agent": "FernandoCrawlerBot/1.0"
@@ -20,8 +20,8 @@ RATING_MAP = {
 }
 
 
-def fetch_page():
-    response = requests.get(URL, headers=HEADERS)
+def fetch_page(url):
+    response = requests.get(url, headers=HEADERS)
     response.encoding = "utf-8"
     return response.text
 
@@ -37,7 +37,14 @@ def parse_books(html):
 
         title = article.h3.a["title"]
 
-        price = article.find("p", class_="price_color").text
+        price_text = article.find(
+            "p",
+            class_="price_color"
+        ).text
+
+        price = float(
+            price_text.replace("£", "").replace("Â", "")
+        )
 
         availability = article.find(
             "p",
@@ -61,6 +68,39 @@ def parse_books(html):
     return books
 
 
+def scrape_all_pages():
+
+    all_books = []
+
+    page = 1
+
+    while True:
+
+        if page == 1:
+            url = BASE_URL
+        else:
+            url = f"{BASE_URL}catalogue/page-{page}.html"
+
+        print(f"Scraping page {page}...")
+
+        response = requests.get(url, headers=HEADERS)
+
+        if response.status_code != 200:
+            break
+
+        response.encoding = "utf-8"
+
+        books = parse_books(response.text)
+
+        all_books.extend(books)
+
+        page += 1
+
+        time.sleep(1)
+
+    return all_books
+
+
 def save_json(data):
     with open("output/books.json", "w", encoding="utf-8") as f:
         json.dump(data, f, indent=4, ensure_ascii=False)
@@ -75,17 +115,13 @@ def main():
 
     os.makedirs("output", exist_ok=True)
 
-    html = fetch_page()
-
-    books = parse_books(html)
+    books = scrape_all_pages()
 
     save_json(books)
 
     save_csv(books)
 
-    time.sleep(1)
-
-    print("Scraping finalizado!")
+    print(f"Total books scraped: {len(books)}")
 
 
 if __name__ == "__main__":

@@ -1,4 +1,4 @@
-# Imagem base 
+# Imagem base leve do Python
 FROM python:3.12-slim
 
 # Evita criação de arquivos .pyc
@@ -10,10 +10,10 @@ ENV PYTHONUNBUFFERED=1
 # Cria usuário não-root
 RUN useradd -m crawleruser
 
-# Define diretório de trabalho
+# Diretório principal da aplicação
 WORKDIR /app
 
-# Copia dependências
+# Copia arquivo de dependências
 COPY requirements.txt .
 
 # Instala dependências
@@ -22,13 +22,13 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copia os arquivos do projeto
 COPY . .
 
-# Cria pasta de output
+# Cria pasta de saída
 RUN mkdir -p output
 
-# Dá permissão ao usuário
+# Ajusta permissões
 RUN chown -R crawleruser:crawleruser /app
 
-# Troca para usuário não-root
+# Usa usuário não-root
 USER crawleruser
 
 # Comando principal

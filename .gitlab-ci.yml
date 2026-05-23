@@ -1,0 +1,50 @@
+stages:
+  - lint
+  - test
+  - build
+  - deploy
+
+variables:
+  IMAGE_NAME: $CI_REGISTRY_IMAGE/crawler-trainee
+  IMAGE_TAG: $CI_COMMIT_SHORT_SHA
+
+lint:
+  stage: lint
+  image: python:3.12
+
+  before_script:
+    - pip install flake8
+
+  script:
+    - flake8 .
+
+test:
+  stage: test
+  image: python:3.12
+
+  before_script:
+    - pip install -r requirements.txt
+    - pip install pytest
+
+  script:
+    - pytest
+
+build:
+  stage: build
+  image: docker:latest
+
+  services:
+    - docker:dind
+
+  script:
+    - docker build -t $IMAGE_NAME:$IMAGE_TAG .
+    - echo "Simulando push para GitLab Container Registry"
+
+deploy:
+  stage: deploy
+  script:
+    - echo "Deploying crawler to AWS ECS..."
+    - echo "aws ecs update-service ..."
+  
+  only:
+    - main
